@@ -21,12 +21,10 @@ func (h *Handler) setupWSConn(c echo.Context) error {
 	conn, err := websocket.Accept(c.Response().Writer, c.Request(), opts)
 	if err != nil {
 		fmt.Printf("room name: %s, err: %v", roomName, err)
-		//return err
 		c.Logger().Error(err)
 	}
 
 	wsClient := NewClient(roomName, h.sessions, conn)
-	//t, b, err := conn.Read()
 
 	var closeErr websocket.CloseError
 	err = wsClient.Start(c.Request().Context())
@@ -48,10 +46,7 @@ func (h *Handler) setupWSConn(c echo.Context) error {
 		return nil
 	}
 
-	// TODO: check err
-
 	if err != nil {
-		//return err
 		c.Logger().Error(err)
 	}
 
