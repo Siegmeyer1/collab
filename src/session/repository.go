@@ -1,6 +1,9 @@
 package session
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 type Repository struct {
 	sessions map[string]*Session
@@ -9,6 +12,16 @@ type Repository struct {
 
 func NewRepository() *Repository {
 	return &Repository{sessions: make(map[string]*Session)}
+}
+
+func (r *Repository) GetSession(roomName string) (*Session, error) {
+	s, ok := r.sessions[roomName]
+
+	if !ok {
+		return nil, errors.New("no active session")
+	}
+
+	return s, nil
 }
 
 func (r *Repository) GetOrCreateSession(roomName string) (*Session, error) {
