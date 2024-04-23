@@ -9,3 +9,7 @@ run-server:
 
 server: clean-server build-server run-server
 
+env:
+	docker-compose up --detach
+
+run: env run-server

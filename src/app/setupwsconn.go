@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"diploma/src/logging"
+	"diploma/src/session"
 	"errors"
 	"github.com/labstack/echo/v4"
 	"nhooyr.io/websocket"
@@ -26,7 +27,7 @@ func (h *Handler) setupWSConn(c echo.Context) error {
 		return err
 	}
 
-	wsClient := NewClient(roomName, h.sessions, conn)
+	wsClient := session.NewClient(roomName, h.sessions, conn)
 
 	var closeErr websocket.CloseError
 	err = wsClient.Start(context.Background())

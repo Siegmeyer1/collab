@@ -2,52 +2,49 @@ package session
 
 import (
 	"context"
+	"diploma/src/document"
+	"diploma/src/postgres"
 	"diploma/src/utils"
 )
 
-type Client interface {
-	ID() string
-	Send(context.Context, []byte) error
-}
+//type Client interface {
+//	ID() string
+//	Send(context.Context, []byte) error
+//}
 
 type Session struct {
-	id       string
-	roomName string
-	clients  map[Client]struct{}
+	id          string
+	roomName    string
+	clients     map[*Client]struct{}
+	updateRepo  document.UpdateRepository
+	removalRepo document.RemovalRepository
 }
 
 func NewSession(roomName string) *Session {
 	s := &Session{
-		id:       utils.NewSessID(),
-		roomName: roomName,
-		clients:  make(map[Client]struct{}),
+		id:          utils.NewSessID(),
+		roomName:    roomName,
+		clients:     make(map[*Client]struct{}),
+		updateRepo:  postgres.NewUpdateRepository(roomName),
+		removalRepo: postgres.NewRemovalRepository(roomName),
 	}
 
 	return s
 }
 
-func (s *Session) AddClient(c Client) {
+func (s *Session) AddClient(c *Client) {
 	s.clients[c] = struct{}{}
 }
 
-func (s *Session) RemoveClient(c Client) {
+func (s *Session) RemoveClient(c *Client) {
 	delete(s.clients, c)
 }
 
-func (s *Session) SendAllExcept(ctx context.Context, c Client, msg []byte) error {
+func (s *Session) SendMessage(ctx context.Context, c *Client, msg []byte) error {
 	for client := range s.clients {
 		if client == c {
 			continue
 		}
-		if err := client.Send(ctx, msg); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Session) SendAll(ctx context.Context, msg []byte) error {
-	for client := range s.clients {
 		if err := client.Send(ctx, msg); err != nil {
 			return err
 		}

@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS updates;
+DROP TABLE IF EXISTS removals;
