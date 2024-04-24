@@ -2,7 +2,6 @@ package messages
 
 import (
 	"bytes"
-	"diploma/src/logging"
 	"encoding/binary"
 	"fmt"
 )
@@ -17,9 +16,8 @@ var (
 type MessageType uint64
 
 var (
-	SyncStep1 MessageType = 0
-	SyncStep2 MessageType = 1
-	Update    MessageType = 2
+	SyncRequest MessageType = 0
+	Update      MessageType = 2
 )
 
 type Message struct {
@@ -85,16 +83,16 @@ func DecodeMessage(b []byte) (*Message, error) {
 	}, nil
 }
 
-type StateVectorElement struct {
+type VectorCLock struct {
 	ClientID uint64
 	Clock    uint64
 }
 
-type Step1SyncMessage struct {
-	StateVector []StateVectorElement
+type SyncReqMessage struct {
+	StateVector []VectorCLock
 }
 
-func DecodeStep1SyncMessage(b []byte) (*Step1SyncMessage, error) {
+func DecodeSyncReqMessage(b []byte) (*SyncReqMessage, error) {
 	buf := bytes.NewBuffer(b)
 
 	protocol, messageType, err := ReadProtoAndType(buf)
@@ -106,11 +104,11 @@ func DecodeStep1SyncMessage(b []byte) (*Step1SyncMessage, error) {
 		return nil, fmt.Errorf("decoding Step1Sync msg: wrong protocol: %d", protocol)
 	}
 
-	if messageType != SyncStep1 {
+	if messageType != SyncRequest {
 		return nil, fmt.Errorf("decoding Step1Sync msg: wrong messageType: %d", messageType)
 	}
 
-	msg := &Step1SyncMessage{}
+	msg := &SyncReqMessage{}
 
 	_, err = binary.ReadUvarint(buf) // this is num of bytes left in message, we don`t need this
 	if err != nil {
@@ -123,7 +121,7 @@ func DecodeStep1SyncMessage(b []byte) (*Step1SyncMessage, error) {
 	}
 
 	for i := uint64(0); i < svLength; i++ {
-		el, err := readStateVectorElement(buf)
+		el, err := readVectorClock(buf)
 		if err != nil {
 			return nil, fmt.Errorf("reading element [%d]: %w", i, err)
 		}
@@ -139,14 +137,14 @@ type UpdateMessage struct {
 	ClientID     uint64
 	Clock        uint64
 	Data         []byte
-	DeleteData   []byte // only valid if IsDeleteOnly is true
+	//DeleteData   []byte // only valid if IsDeleteOnly is true
 }
 
 func DecodeUpdateMessage(b []byte) (*UpdateMessage, error) {
 	buf := bytes.NewBuffer(b)
 	var isDeleteOnly bool
 	var clientID, clock uint64
-	var deleteData []byte
+	//var deleteData []byte
 
 	protocol, messageType, err := ReadProtoAndType(buf)
 	if err != nil {
@@ -177,11 +175,10 @@ func DecodeUpdateMessage(b []byte) (*UpdateMessage, error) {
 	if numOfUpdates == 1 {
 		isDeleteOnly = false
 
-		numOfStructs, err := binary.ReadUvarint(buf) // this is number of structs in update, omit it for now
+		_, err = binary.ReadUvarint(buf) // this is number of structs in update, omit it for now
 		if err != nil {
 			return nil, err
 		}
-		logging.Debug("numOfStructs: %d", numOfStructs)
 
 		clientID, err = binary.ReadUvarint(buf)
 		if err != nil {
@@ -194,8 +191,6 @@ func DecodeUpdateMessage(b []byte) (*UpdateMessage, error) {
 
 	} else {
 		isDeleteOnly = true
-
-		deleteData = buf.Bytes()
 	}
 
 	msg := &UpdateMessage{
@@ -203,33 +198,21 @@ func DecodeUpdateMessage(b []byte) (*UpdateMessage, error) {
 		ClientID:     clientID,
 		Clock:        clock,
 		Data:         b,
-		DeleteData:   deleteData,
 	}
 
 	return msg, nil
 }
 
-//func DecodeDeleteData(b []byte) (map[uint64]uint64, error) {
-//	buf := bytes.NewBuffer(b)
-//
-//	numOfClients, err := binary.ReadUvarint(buf)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	for i := uint64(0); i < numOfClients; i++ {
-//		clientID, err := binary.ReadUvarint(buf)
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		numOfDeletes, err := binary.ReadUvarint(buf)
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		for i := uint64(0); i < numOfDeletes; i++ {
-//
-//		}
-//	}
-//}
+func readVectorClock(buf *bytes.Buffer) (VectorCLock, error) {
+	clientID, err := binary.ReadUvarint(buf)
+	if err != nil {
+		return VectorCLock{}, err
+	}
+
+	clock, err := binary.ReadUvarint(buf)
+	if err != nil {
+		return VectorCLock{}, err
+	}
+
+	return VectorCLock{ClientID: clientID, Clock: clock}, nil
+}

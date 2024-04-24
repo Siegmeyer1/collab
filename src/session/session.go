@@ -7,11 +7,6 @@ import (
 	"diploma/src/utils"
 )
 
-//type Client interface {
-//	ID() string
-//	Send(context.Context, []byte) error
-//}
-
 type Session struct {
 	id          string
 	roomName    string
@@ -41,6 +36,10 @@ func (s *Session) RemoveClient(c *Client) {
 }
 
 func (s *Session) SendMessage(ctx context.Context, c *Client, msg []byte) error {
+	return s.sendMessageLocal(ctx, c, msg)
+}
+
+func (s *Session) sendMessageLocal(ctx context.Context, c *Client, msg []byte) error {
 	for client := range s.clients {
 		if client == c {
 			continue

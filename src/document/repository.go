@@ -3,7 +3,7 @@ package document
 import "diploma/src/messages"
 
 type UpdateRepository interface {
-	GetUpdates(*messages.Step1SyncMessage) ([][]byte, error)
+	GetUpdates(*messages.SyncReqMessage) ([][]byte, error)
 	StoreUpdate(*messages.UpdateMessage) error
 }
 
