@@ -17,18 +17,17 @@ const (
 type Client struct {
 	id       string
 	roomName string
-	sessions *Repository
+	sess     *Session
 	conn     *websocket.Conn
 
 	incoming chan []byte
 }
 
-func NewClient(roomName string, sessions *Repository, conn *websocket.Conn) *Client {
+func NewClient(roomName string, session *Session) *Client {
 	return &Client{
 		id:       utils.NewClientID(),
 		roomName: roomName,
-		sessions: sessions,
-		conn:     conn,
+		sess:     session,
 		incoming: make(chan []byte, bufferSize),
 	}
 }
@@ -37,23 +36,20 @@ func (c *Client) ID() string {
 	return c.id
 }
 
-func (c *Client) Start(ctx context.Context) error {
+func (c *Client) Start(ctx context.Context, conn *websocket.Conn) error {
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(context.Canceled)
 
-	logging.Debug("client (ID: %s) connected to room %s", c.id, c.roomName)
-
-	sess, err := c.sessions.GetOrCreateSession(c.roomName)
-	if err != nil {
-		return err
-	}
-
-	sess.AddClient(c)
+	c.conn = conn
 
 	go func() {
 		err := c.listen(ctx)
 		cancel(err)
 	}()
+
+	c.sess.AddClient(c)
+
+	logging.Debug("client (ID: %s) connected to room %s", c.id, c.roomName)
 
 	for {
 		select {
@@ -61,20 +57,22 @@ func (c *Client) Start(ctx context.Context) error {
 			return context.Cause(ctx)
 
 		case msg := <-c.incoming:
-			if err := c.handleMessage(ctx, msg); err != nil {
-				return err
+			msg2 := make([]byte, len(msg))
+			if n := copy(msg2, msg); n != len(msg) {
+				logging.Error("bad copy")
+				continue
 			}
+			go func(msg []byte) {
+				if err := c.handleMessage(ctx, msg); err != nil {
+					logging.Exception(err)
+				}
+			}(msg2)
 		}
 	}
 }
 
 func (c *Client) Close() error {
-	sess, err := c.sessions.GetSession(c.roomName)
-	if err != nil {
-		return err
-	}
-
-	sess.RemoveClient(c)
+	c.sess.RemoveClient(c)
 
 	return nil
 }
@@ -104,30 +102,19 @@ func (c *Client) listen(ctx context.Context) error {
 		}
 
 		if msgBytes != nil {
-			//msg, err := messages.DecodeMessage(msgBytes)
-			//if err != nil {
-			//	logging.Error("decoding message: %v", err)
-			//	continue
-			//}
-
 			c.incoming <- msgBytes
 		}
 	}
 }
 
 func (c *Client) handleMessage(ctx context.Context, bytes []byte) error {
-	sess, err := c.sessions.GetSession(c.roomName)
-	if err != nil {
-		return err
-	}
-
 	protocol, messageType, err := messages.PeekProtoAndType(bytes)
 	if err != nil {
 		return err
 	}
 
 	if protocol == messages.AwarenessProtocol {
-		go sess.SendMessage(ctx, c, bytes)
+		go c.sess.SendMessage(ctx, c, bytes)
 		return nil
 	}
 
@@ -137,17 +124,22 @@ func (c *Client) handleMessage(ctx context.Context, bytes []byte) error {
 
 	switch messageType {
 	case messages.Update:
-		go sess.SendMessage(ctx, c, bytes)
-
 		updateMessage, err := messages.DecodeUpdateMessage(bytes)
 		if err != nil {
 			return err
 		}
 
 		if updateMessage.IsDeleteOnly {
-			return sess.removalRepo.StoreRemoval(updateMessage.Data)
+			if err = c.sess.removalRepo.StoreRemoval(updateMessage.Data); err != nil {
+				return err
+			}
+		} else if err = c.sess.updateRepo.StoreUpdate(updateMessage); err != nil {
+			return err
 		}
-		return sess.updateRepo.StoreUpdate(updateMessage)
+
+		go c.sess.SendMessage(ctx, c, bytes)
+
+		return nil
 
 	case messages.SyncRequest:
 		syncMessage, err := messages.DecodeSyncReqMessage(bytes)
@@ -155,7 +147,12 @@ func (c *Client) handleMessage(ctx context.Context, bytes []byte) error {
 			return err
 		}
 
-		updates, err := sess.updateRepo.GetUpdates(syncMessage)
+		updates, err := c.sess.updateRepo.GetUpdates(syncMessage)
+		if err != nil {
+			return err
+		}
+
+		removals, err := c.sess.removalRepo.GetRemovals()
 		if err != nil {
 			return err
 		}
@@ -165,11 +162,6 @@ func (c *Client) handleMessage(ctx context.Context, bytes []byte) error {
 			if err != nil {
 				return err
 			}
-		}
-
-		removals, err := sess.removalRepo.GetRemovals()
-		if err != nil {
-			return err
 		}
 
 		for _, removal := range removals {

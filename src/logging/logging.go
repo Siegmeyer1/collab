@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"time"
 )
 
 func NewLogger() *zap.Logger {
@@ -38,5 +39,7 @@ func Exception(err error) {
 }
 
 func Debug(template string, args ...interface{}) {
+	now := time.Now()
+	template = fmt.Sprintf("[%s] ", now.String()) + template
 	Logger.Sugar().Debugf(template, args...)
 }

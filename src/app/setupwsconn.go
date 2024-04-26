@@ -18,8 +18,16 @@ func (h *Handler) setupWSConn(c echo.Context) error {
 	}
 
 	opts := &websocket.AcceptOptions{
-		OriginPatterns: []string{"localhost:8080"},
+		OriginPatterns: []string{"localhost:*"},
 	}
+
+	sess, err := h.sessions.GetOrCreateSession(roomName)
+	if err != nil {
+		return err
+	}
+
+	wsClient := session.NewClient(roomName, sess)
+	//sess.AddClient(wsClient)
 
 	conn, err := websocket.Accept(c.Response().Writer, c.Request(), opts)
 	if err != nil {
@@ -27,10 +35,10 @@ func (h *Handler) setupWSConn(c echo.Context) error {
 		return err
 	}
 
-	wsClient := session.NewClient(roomName, h.sessions, conn)
+	//wsClient.Connect()
 
 	var closeErr websocket.CloseError
-	err = wsClient.Start(context.Background())
+	err = wsClient.Start(context.Background(), conn)
 	defer wsClient.Close()
 
 	// just error handling beyond this point

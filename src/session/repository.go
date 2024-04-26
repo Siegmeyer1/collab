@@ -24,14 +24,17 @@ func (r *Repository) GetSession(roomName string) (*Session, error) {
 	return s, nil
 }
 
-func (r *Repository) GetOrCreateSession(roomName string) (*Session, error) {
+func (r *Repository) GetOrCreateSession(roomName string) (s *Session, err error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	s, ok := r.sessions[roomName]
 
 	if !ok {
-		s = NewSession(roomName)
+		s, err = NewSession(roomName)
+		if err != nil {
+			return nil, err
+		}
 		r.sessions[roomName] = s
 	}
 

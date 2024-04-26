@@ -54,7 +54,7 @@ func (r *UpdateRepository) GetUpdates(request *messages.SyncReqMessage) ([][]byt
 	for _, vc := range request.StateVector {
 		clientIDs = append(clientIDs, vc.ClientID)
 
-		filter = append(filter, sq.And{sq.Eq{"client_id": vc.ClientID}, sq.Gt{"clock": vc.Clock}})
+		filter = append(filter, sq.And{sq.Eq{"client_id": vc.ClientID}, sq.GtOrEq{"clock": vc.Clock}})
 	}
 
 	filter = append(filter, sq.NotEq{"client_id": clientIDs})

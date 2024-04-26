@@ -27,3 +27,7 @@ func NewSessID() string {
 func NewClientID() string {
 	return randStr("client:")
 }
+
+func NewPublisherID() string {
+	return randStr("pub:")
+}
