@@ -3,31 +3,32 @@ package main
 import (
 	"context"
 	"diploma/src/app"
+	"diploma/src/config"
 	"diploma/src/postgres"
 	"diploma/src/redis"
-	"flag"
 	"fmt"
 )
 
 func main() {
 	var err error
-	var port int
 
 	fmt.Println("Starting server")
 
-	flag.IntVar(&port, "p", 1234, "Provide a port number")
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		panic(fmt.Sprintf("loading config: %v", err))
+	}
 
-	flag.Parse()
-
-	postgres.Pool, err = postgres.MakePgxPool("postgres://postgres:postgres@localhost:5433/editor")
+	postgres.Pool, err = postgres.MakePgxPool(&cfg.Postgres)
 	if err != nil {
 		panic(fmt.Sprintf("Connect to postgres failed: %v", err))
 	}
 
-	redisClient, err := redis.NewClient("localhost:6380")
+	redisClient, err := redis.NewClient(&cfg.Redis)
 	if err != nil {
 		panic(fmt.Sprintf("Build redis client failed: %v", err))
 	}
+
 	redis.DefaultQueue = redis.NewQueue(redisClient)
 	go redis.DefaultQueue.Serve(context.Background())
 
@@ -36,7 +37,7 @@ func main() {
 		panic(fmt.Sprintf("Server build failed: %v", err))
 	}
 
-	if err = srv.Start(fmt.Sprintf("localhost:%d", port)); err != nil {
+	if err = srv.Start(fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)); err != nil {
 		panic(fmt.Sprintf("Server start failed: %v", err))
 	}
 }

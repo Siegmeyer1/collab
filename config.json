@@ -1,0 +1,20 @@
+{
+  "host": "127.0.0.1",
+  "port": 1234,
+  "storage": "postgres",
+  "queue": "redis",
+
+  "postgres": {
+    "login": "postgres",
+    "password": "postgres",
+    "db_name": "editor",
+    "conn_url": "postgres://localhost:5433"
+  },
+
+  "redis": {
+    "host": "localhost",
+    "port": 6380,
+    "db": 1,
+    "password": ""
+  }
+}
