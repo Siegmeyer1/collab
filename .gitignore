@@ -2,3 +2,4 @@
 cmd/server/server
 .idea
 yacloudkey*
+config/config_yacloud.json
