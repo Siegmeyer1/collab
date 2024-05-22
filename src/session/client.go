@@ -1,10 +1,10 @@
 package session
 
 import (
+	"collab/src/logging"
+	"collab/src/messages"
+	"collab/src/utils"
 	"context"
-	"diploma/src/logging"
-	"diploma/src/messages"
-	"diploma/src/utils"
 	"fmt"
 	"nhooyr.io/websocket"
 	"time"

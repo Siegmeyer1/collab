@@ -1,7 +1,7 @@
 package app
 
 import (
-	"diploma/src/session"
+	"collab/src/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )

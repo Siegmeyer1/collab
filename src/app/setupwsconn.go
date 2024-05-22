@@ -1,9 +1,9 @@
 package app
 
 import (
+	"collab/src/logging"
+	"collab/src/session"
 	"context"
-	"diploma/src/logging"
-	"diploma/src/session"
 	"errors"
 	"github.com/labstack/echo/v4"
 	"nhooyr.io/websocket"
@@ -17,9 +17,7 @@ func (h *Handler) setupWSConn(c echo.Context) error {
 		return err
 	}
 
-	opts := &websocket.AcceptOptions{
-		OriginPatterns: []string{"localhost:*"},
-	}
+	opts := &websocket.AcceptOptions{OriginPatterns: []string{"localhost:*"}}
 
 	sess, err := h.sessions.GetOrCreateSession(roomName)
 	if err != nil {
@@ -27,7 +25,6 @@ func (h *Handler) setupWSConn(c echo.Context) error {
 	}
 
 	wsClient := session.NewClient(roomName, sess)
-	//sess.AddClient(wsClient)
 
 	conn, err := websocket.Accept(c.Response().Writer, c.Request(), opts)
 	if err != nil {
@@ -35,13 +32,11 @@ func (h *Handler) setupWSConn(c echo.Context) error {
 		return err
 	}
 
-	//wsClient.Connect()
-
-	var closeErr websocket.CloseError
 	err = wsClient.Start(context.Background(), conn)
 	defer wsClient.Close()
 
 	// just error handling beyond this point
+	var closeErr websocket.CloseError
 	if errors.As(err, &closeErr) {
 		closeStatus := websocket.CloseStatus(closeErr)
 		if closeStatus == websocket.StatusNormalClosure ||

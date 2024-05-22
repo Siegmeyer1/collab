@@ -1,9 +1,9 @@
 package redis
 
 import (
+	"collab/src/logging"
+	"collab/src/utils"
 	"context"
-	"diploma/src/logging"
-	"diploma/src/utils"
 	"encoding/json"
 	"github.com/go-redis/redis/v8"
 )

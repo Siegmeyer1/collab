@@ -1,12 +1,12 @@
 package session
 
 import (
+	"collab/src/document"
+	"collab/src/logging"
+	"collab/src/postgres"
+	"collab/src/redis"
+	"collab/src/utils"
 	"context"
-	"diploma/src/document"
-	"diploma/src/logging"
-	"diploma/src/postgres"
-	"diploma/src/redis"
-	"diploma/src/utils"
 	"sync"
 )
 

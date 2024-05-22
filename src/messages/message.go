@@ -137,7 +137,6 @@ type UpdateMessage struct {
 	ClientID     uint64
 	Clock        uint64
 	Data         []byte
-	//DeleteData   []byte // only valid if IsDeleteOnly is true
 }
 
 func DecodeUpdateMessage(b []byte) (*UpdateMessage, error) {

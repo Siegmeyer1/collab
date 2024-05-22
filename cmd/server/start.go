@@ -1,11 +1,11 @@
 package main
 
 import (
+	"collab/src/app"
+	"collab/src/config"
+	"collab/src/postgres"
+	"collab/src/redis"
 	"context"
-	"diploma/src/app"
-	"diploma/src/config"
-	"diploma/src/postgres"
-	"diploma/src/redis"
 	"fmt"
 )
 

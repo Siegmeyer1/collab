@@ -1,6 +1,6 @@
 package document
 
-import "diploma/src/messages"
+import "collab/src/messages"
 
 type UpdateRepository interface {
 	GetUpdates(*messages.SyncReqMessage) ([][]byte, error)

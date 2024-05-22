@@ -3,7 +3,7 @@ package redis
 import (
 	"fmt"
 
-	"diploma/src/config"
+	"collab/src/config"
 	"github.com/go-redis/redis/v8"
 )
 

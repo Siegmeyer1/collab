@@ -1,8 +1,8 @@
 package postgres
 
 import (
+	"collab/src/config"
 	"context"
-	"diploma/src/config"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"

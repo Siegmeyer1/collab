@@ -1,8 +1,8 @@
 package postgres
 
 import (
-	"diploma/src/document"
-	"diploma/src/messages"
+	"collab/src/document"
+	"collab/src/messages"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
